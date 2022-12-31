@@ -1,0 +1,78 @@
+D Flip Flop
+
+Verilog Code for D Flip Flop (.v file)
+
+module dflipflop(Q,Qbar,D,clk,Reset);
+input D,clk,Reset;
+output reg Q;
+output Qbar;
+always@(posedge clk)
+begin
+if(Reset == 1'b0)
+Q <= 1'b0;
+else
+Q <= D;
+end
+assign Qbar = ~Q;
+endmodule
+
+
+Test Bench (.v file)
+
+module dff_test;
+reg D,clk,Reset;
+wire Q,Qbar;
+dflipflop dut(.clk(clk),.D(D),.Reset(Reset),.Q(Q),.Qbar(Qbar));
+initial 
+begin
+ clk=0;
+ Reset=1;
+ D=1'b0;
+#30 Reset=0;
+#50 D=1'b1;
+#50 D=1'b0;
+end
+initial
+begin
+forever #10 clk= ~clk;
+end
+initial
+begin
+#150 $finish;
+end
+endmodule
+
+
+Constraint (.sdc file)
+
+Create_clock -name clk -period 2 [get_ports "clk"]
+Set_clock_transition -rise 0.1[get_clocks "clk"]
+Set_clock_transition -fall 0.1[get_clocks "clk"]
+Set_clock_uncertainity 0.05[ get_ports "clk"]
+Set_input_delay -max 0.2[get_ports "Reset"] -clock[get_clocks "clk"]
+Set_input_delay -max 0.2[get_ports "D'] -clock[get_clocks "clk"]
+Set_output_delay -max 0.2[get_ports "Q"] -clock[get_clocks "clk"]
+Set_output_delay -max 0.2[get_ports "Qbar"] -clock[get_clocks "clk"]
+
+
+Script (.tcl file)
+
+read_lib /home/install/FOUNDRY/digital/45nm/dig/lib/fast.lib
+set_db lef_library {/home/install/FOUNDRY/digital/45nm/dig/lef/gsclib045_tech.lef 
+/home/install/FOUNDRY/digital/45nm/dig/lef/gsclib045_macro.lef}
+read_hdl dff.v
+elaborate
+read_sdc constraint.sdc
+set_db syn_generic_effort medium
+set_db syn_map_effort medium
+set_db syn_opt_effort medium
+syn_generic
+syn_map
+syn_opt
+report_power > dff_power.rpt
+report_area > dff_area.rpt
+report_gates > dff_gates.rpt
+report_timing -unconstrained > dff_timing.rpt
+write_hdl > dff_netlist.v
+write_sdc > dff_sdc.sdc
+gui_show
