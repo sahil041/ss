@@ -1,0 +1,88 @@
+Verilog Code for SR Flip Flop (.v file)
+
+module SR_ff(q,qbar,s,r,clk);
+output q,qbar;
+input clk,s,r;
+reg tq;
+always @(posedge clk)
+begin
+if (s == 1'b0 && r == 1'b0)
+tq <= tq;
+else if (s == 1'b0 && r == 1'b1)
+tq <= 1'b0;
+else if (s == 1'b1 && r == 1'b0)
+tq <= 1'b1;
+else if (s == 1'b1 && r == 1'b1)
+tq <= 1'bx;
+end
+assign q = tq;
+assign qbar = ~tq;
+endmodule
+
+
+Test Bench (.v file)
+
+module SR_ff_test;
+reg clk,s,r;
+wire q,qbar;
+SR_ff sr1(q,qbar,s,r,clk);
+initial
+clk = 1'b0;
+always
+#10 clk = ~clk;
+initial
+begin
+s = 1'b0; r = 1'b0;
+#30 s = 1'b1;
+#29 s = 1'b0;
+#1 r = 1'b1;
+#30 s = 1'b1;
+#30 r = 1'b0;
+#20 s = 1'b0;
+#19 s = 1'b1;
+#200 s = 1'b1; r = 1'b1;
+#50 s = 1'b0; r = 1'b0;
+#50 s = 1'b1; r = 1'b0;
+#10 ;
+end
+always
+#5 $display($time," clk=%b s=%b r=%b ",clk,s,r);
+initial
+#500 $finish;
+endmodule
+
+
+Constraint (.sdc file)
+
+Create_clock -name clk -period 2 [get_ports "clk"]
+Set_clock_transition -rise 0.1[get_clocks "clk"]
+Set_clock_transition -fall 0.1[get_clocks "clk"]
+Set_clock_uncertainity 0.05[ get_ports "clk"]
+Set_input_delay -max 0.2[get_ports "rst"] -clock[get_clocks "clk"]
+Set_input_delay -max 0.2[get_ports "s"] -clock[get_clocks "clk"]
+Set_input_delay -max 0.2[get_ports "r'] -clock[get_clocks "clk"]
+Set_output_delay -max 0.2[get_ports "q"] -clock[get_clocks "clk"]
+Set_output_delay -max 0.2[get_ports "qbar"] -clock[get_clocks "clk"]
+
+
+Script (.tcl file)
+
+read_lib /home/install/FOUNDRY/digital/45nm/dig/lib/fast.lib
+set_db lef_library {/home/install/FOUNDRY/digital/45nm/dig/lef/gsclib045_tech.lef 
+/home/install/FOUNDRY/digital/45nm/dig/lef/gsclib045_macro.lef}
+read_hdl srff.v
+elaborate
+read_sdc constraint.sdc
+set_db syn_generic_effort medium
+set_db syn_map_effort medium
+set_db syn_opt_effort medium
+syn_generic
+syn_map
+syn_opt
+report_power > srff_power.rpt
+report_area > srff_area.rpt
+report_gates > srff_gates.rpt
+report_timing -unconstrained > srff_timing.rpt
+write_hdl > srff_netlist.v
+write_sdc > srff_sdc.sdc
+gui_show
