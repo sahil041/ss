@@ -1,0 +1,82 @@
+4 Bit Up - Down Counter
+
+Verilog Code (.v file)
+
+module counter(clk,m,rst,count);
+input clk,m,rst;
+output reg [3:0] count;
+always@(posedge clk or negedge rst)
+begin
+if(!rst)
+count=0;
+else if(m)
+count=count+1;
+else
+count=count-1;
+end
+endmodule
+
+
+Test Bench (.v file)
+
+module counter_test;
+reg clk, rst,m;
+wire [3:0] count;
+initial 
+begin
+clk=0;
+rst=0;#35;
+rst=1;
+end
+initial
+begin
+m=1;
+#180 m=0;
+end
+initial $sdf_annotate ("delays.sdf" , counter_test.counter1, ,"sdf.log");
+counter counter1(clk,m,rst, count);
+always #5 clk=~clk;
+initial $monitor("Time=%t rst=%b clk=%b count=%b", $time,rst,clk,count);
+initial
+#330 $finish;
+// dumping waves
+initial begin
+$recordfile("test.trn");
+$recordvars;
+end
+endmodule
+
+
+Constraint (.sdc file)
+
+create_clock -name clk -period 2 -waveform {0 1} [get_ports "clk"]
+set_input_delay -max 0.8 [get_ports "rst"] -clock [get_clocks "clk"]
+set_output_delay -max 0.8 [get_ports "count"] -clock [get_clocks "clk"]
+set_input_transition 0.2 [all_inputs]
+set_max_capacitance 30 [get_ports]
+set_clock_transition -rise 0.1 [get_clocks "clk"]
+set_clock_transition -fall 0.1 [get_clocks "clk"]
+set_clock_uncertainty 0.01 [get_ports "clk"]
+set_input_transition 0.12 [all_inputs]
+set_load 0.15 [all_outputs]
+set_max_fanout 30.00 [current_design]
+
+
+Script (.tcl file)
+
+read_libs /home/install/FOUNDRY/digital/90nm/dig/lib/slow.lib
+read_hdl 4b.v
+elaborate
+read_sdc constraints.sdc
+set_db syn_generic_effort medium
+set_db syn_map_effort medium
+set_db syn_opt_effort medium
+syn_generic
+syn_map
+syn_opt
+report_timing > 4bit_counter_timing.rep
+report_area > 4bit_counter_area.rep
+report_power > 4bit_counter_power.rep
+write_hdl > 4bit_counter_netlist.v
+write_sdc > 4bit_counter_sdc.sdc
+gui_show
